@@ -26,3 +26,37 @@ class ImageView(APIView):
         images = home.images.all()
         serializer = ImageFilesSerializer(images, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+from django.db.models import Q, query
+
+
+class Search(APIView):
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, format=None):
+        data = self.request.data
+        queryset = Home.objects.filter(is_published=True)
+        try:
+            str = data["str"]
+            q = (Q(description__icontains=str)) | (Q(title__icontains=str))
+            queryset = queryset.filter(q)
+        except:
+            pass
+        try:
+            price_from = data["price_from"]
+            queryset = queryset.filter(price__gte=price_from)
+        except:
+            pass
+        try:
+            price_to = data["price_to"]
+            queryset = queryset.filter(price__lte=price_to)
+        except:
+            pass
+        try:
+            city = data["city"]
+            queryset = queryset.filter(city__iexact=city)
+        except:
+            pass
+        serializer = HomeSerializer(queryset, many=True)
+        return Response(serializer.data)
